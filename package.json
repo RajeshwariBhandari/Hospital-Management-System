@@ -1,7 +1,6 @@
 {
   "name": "assignment1_rajeshwari",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -14,6 +13,8 @@
     "bcrypt": "^5.1.0",
     "express": "^4.18.2",
     "firebase": "^9.17.1",
+    "formidable": "^2.1.1",
+    "googleapis": "^111.0.0",
     "http-status-codes": "^2.2.0",
     "jsonwebtoken": "^9.0.0",
     "multer": "^1.4.5-lts.1",
@@ -22,10 +23,18 @@
     "nodemailer": "^6.9.1",
     "passport": "^0.6.0",
     "passport-google-oauth20": "^2.0.0",
-    "randomstring": "^1.2.3"
+    "path": "^0.12.7",
+    "promise": "^8.3.0",
+    "randomstring": "^1.2.3",
+    "url": "^0.11.0"
   },
   "devDependencies": {
     "dotenv": "^16.0.3",
     "nodemon": "^2.0.20"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "\u001b[200~https://github.com/PBharose/NodeJS-Assignment.git~"
+  },
+  "description": ""
 }

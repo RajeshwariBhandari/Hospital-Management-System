@@ -1,10 +1,15 @@
-import connectDB from "../db/connect.js"
 import jwt from 'jsonwebtoken'
-
+import fs from 'fs'
+import path from 'path'
+import multer from 'multer'
+import { fileURLToPath } from 'url'
+import { google } from 'googleapis'
+import { deleteUserData, } from "../models/usersModel.js"
+import {patientPersonalByUserId,patientFamilyByPatientId,patientDocumentByPatientId,insertPatientPersonalData, insertPatientFamilyData, insertPatientIdDocumentData, insertPatientDocumentData ,updatePatientPersonalData,updatePatientFamilyData,deletePatientFamilyData,deletePatientPersonalData,deletePatientDocumentData} from '../models/patientModel.js'
 
 //INSERTING PERSONAL DETAILS FOR LOGGED USER
-const addPersonalData = (req, res) => {
-    const { mob_number, DOB, weight, height, countryOrigin, diabetic, cardiac, BP, disease_describe } = req.body;
+const insertPersonalData = (req, res) => {
+    const { mobNumber, DOB, weight, height, countryOfOrigin, diabetic, cardiac, BP, diseaseDescribe } = req.body;
 
     var age = new Date().getFullYear() - new Date(DOB).getFullYear()
     var h = height.split("-")
@@ -13,33 +18,15 @@ const addPersonalData = (req, res) => {
     const token = req.headers.authorization.split(' ')[1]
     const userIdvalue = jwt.verify(token, process.env.JWT_SECRET)
 
-    if (!mob_number || !DOB || !weight || !height || !countryOrigin || !disease_describe) {
+    if (!mobNumber || !DOB || !weight || !height || !countryOfOrigin || !diseaseDescribe) {
         return res.json({ status: "error", error: "please provide all values" })
     }
     else {
-        connectDB.query('SELECT * FROM patient_PersonalData WHERE userID = ?', [userIdvalue.id], async (err, result) => {
-
-            if (err) throw err;
-            if (result[0]) return res.json({ error: "This user is already registered as patient" })
+        patientPersonalByUserId(userIdvalue.id, function (result) {
+            if (result[0]) return res.json({ error: "Personal data is already filled" })
             else {
-
-                connectDB.query('INSERT INTO patient_PersonalData SET ?', {
-                    userID: userIdvalue.id,
-                    mob_number: mob_number,
-                    DOB: DOB,
-                    age: age,
-                    weight: weight,
-                    height: height,
-                    BMI: BMI,
-                    countryOrigin: countryOrigin,
-                    diabetic: diabetic,
-                    cardiac: cardiac,
-                    BP: BP,
-                    disease_describe: disease_describe,
-                }, (error, result) => {
-                    if (error) throw error;
-
-                    return res.json({ status: "success", success: "Patient created Successfully" })
+                insertPatientPersonalData(req, userIdvalue.id, age, BMI, function (result1) {
+                    return res.json({ status: "success", success: "Personal data is filled." })
                 })
             }
         })
@@ -47,48 +34,102 @@ const addPersonalData = (req, res) => {
 }
 
 //INSERTING FAMILY DETAILS FOR LOGGED USER
-const addFamilyData = (req, res) => {
-    const { father_name, father_age, father_countryOrigin, mother_name, mother_age, mother_countryOrigin, diabetic, cardiac, BP } = req.body;
+const insertFamilyData = (req, res) => {
+    const { fatherName, fatherAge, fatherCountry, motherName, motherAge, motherCountry, parentsDiabetic, parentsCardiac, parentsBP } = req.body;
 
     const token = req.headers.authorization.split(' ')[1]
     const userIdvalue = jwt.verify(token, process.env.JWT_SECRET)
 
-    if (!father_name || !father_age || !father_countryOrigin || !mother_name || !mother_age || !mother_countryOrigin) {
+    if (!fatherName || !fatherAge || !fatherCountry || !motherName || !motherAge || !motherCountry) {
         return res.json({ status: "error", error: "please provide all values" })
     }
     else {
-        connectDB.query('SELECT patientID from patient_PersonalData WHERE userID = ?', [userIdvalue.id], async (err, ID) => {
-            if (err) throw err
-            else {
-                connectDB.query('SELECT * FROM patient_FamilyData WHERE patientID = ?', [ID.patientID], async (err, result) => {
-                    if (err) throw err;
-                    if (result[0]) return res.json({ error: "This patient deatils are alreay filled" })
-                    else {
-
-                        connectDB.query('INSERT INTO patient_FamilyData SET ?', {
-                            patientID: ID[0].patientID,
-                            father_name: father_name,
-                            father_age: father_age,
-                            father_countryOrigin: father_countryOrigin,
-                            mother_name: mother_name,
-                            mother_age: mother_age,
-                            mother_countryOrigin: mother_countryOrigin,
-                            parent_diabetic: diabetic,
-                            parent_cardiac: cardiac,
-                            parent_BP: BP
-                        }, (error, result) => {
-                            if (error) throw error;
-                            return res.json({ status: "success", success: "Patient family details inserted successfully" })
-                        })
-                    }
-                })
-            }
+        patientPersonalByUserId(userIdvalue.id, function (personalData) {
+            patientFamilyByPatientId(personalData[0].patientId, function (familyData) {
+                if (familyData[0]) return res.json({ error: "Family data is alreay filled" })
+                else {
+                    insertPatientFamilyData(req, personalData[0].patientId, function (result) {
+                        return res.json({ status: "success", success: "Patient family data filled." })
+                    })
+                }
+            })
         })
     }
 }
 
-const addDocumentData = (req, res) => {
+const upload = multer({
+    storage: multer.diskStorage({
+        destination: "./Uploads/",
+        filename: function (req, file, callback) {
+            callback(null, file.originalname)
+        }
+    })
+}).array("filename", 4);
 
+
+const uplaodDocument = (req, res) => {
+    var i;
+    const token = req.headers.authorization.split(' ')[1];
+    const userIdvalue = jwt.verify(token, process.env.JWT_SECRET)
+
+    const oauth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_DRIVE_CLIENT_ID,
+        process.env.GOOGLE_DRIVE_REDIRECT_URI,
+        process.env.GOOGLE_DRIVE_CLIENT_SECRET
+    );
+    oauth2Client.setCredentials({ access_token: process.env.GOOGLE_DRIVE_ACCESS_TOKEN })
+
+    const drive = google.drive({
+        version: 'v3',
+        auth: oauth2Client
+    })
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename)
+    const __filePath = path.join(__dirname, '../Uploads/')
+
+    fs.readdir(__filePath, (err, files) => {
+        var newf = []
+        if (err) throw err;
+        files.forEach(file => newf.push(path.join(__filePath, file)))
+
+        patientPersonalByUserId(userIdvalue.id, function (personalData) {
+            patientDocumentByPatientId(personalData[0].patientId, function (documentData) {
+                if (documentData[0]) return res.json({ error: "patientId already filled" })
+                else {
+                    insertPatientIdDocumentData(personalData[0].patientId, function (result) {
+                        return res.json({ status: "success", success: "Documents uploaded." })
+                    })
+                }
+            })
+        })
+
+        newf.forEach(pathOfFile => uploadFile(pathOfFile))
+    })
+
+    async function uploadFile(newfilepath) {
+        try {
+            const responses = await drive.files.create({
+                requestBody: {
+                    name: path.basename(newfilepath),
+                    mimeType: 'image/png'
+                },
+                media: {
+                    mimeType: 'image/png',
+                    body: fs.createReadStream(newfilepath)
+                }
+            });
+            i = responses.data
+        } catch (err) {
+            console.log(err)
+            throw err
+        }
+        patientPersonalByUserId(userIdvalue.id, function (personalData) {
+            insertPatientDocumentData(i, personalData[0].patientId, function (result) {
+                return res.send("File uploaded successfully");
+            })
+        })
+        fs.unlinkSync(newfilepath)
+    }
 }
 
 //UPDATE PERONAL DATA OF LOGGED USER
@@ -99,7 +140,7 @@ const updatePersonalData = async (req, res, next) => {
     const userIdvalue = jwt.verify(token, process.env.JWT_SECRET)
     var BMI, age;
 
-    connectDB.query('SELECT height ,weight,DOB,age,BMI from patient_PersonalData WHERE userID=?', [userIdvalue.id], async (err, hwValue) => {
+    patientPersonalByUserId(userIdvalue.id, function (hwValue) {
         if (DOB) {
             age = new Date().getFullYear() - new Date(DOB).getFullYear()
         }
@@ -114,83 +155,56 @@ const updatePersonalData = async (req, res, next) => {
         else if (!weight && height) {
             var h = height.split("-")
             BMI = (hwValue[0].weight / (h[0] * 0.3048 + h[1] * 0.0254) ** 2).toFixed(2)
-            //console.log(BMI)
         }
         else if (!height && weight) {
             BMI = (weight / (hwValue[0].height[0] * 0.3048 + hwValue[0].height[2] * 0.0254) ** 2).toFixed(2)
-            // console.log(BMI)
         }
         else {
             BMI = hwValue[0].BMI
         }
-
-        connectDB.query("UPDATE patient_personalData SET ?,age=?, BMI =? WHERE userID=?", [req.body, age, BMI, userIdvalue.id], async (err, user) => {
-            if (err) throw err
-            else {
-                //console.log(user)
-                return res.send("Data updated successfully")
-            }
+        updatePatientPersonalData(req, age, BMI, userIdvalue.id, function (result) {
+            return res.send("Personal Data updated successfully")
         })
     })
 
 }
+
 //UPDATED LOGGED PATIENTS FAMILY DETAILS
 const updateFamilyData = async (req, res, next) => {
     const token = req.headers.authorization.split(' ')[1];
     const userIdvalue = jwt.verify(token, process.env.JWT_SECRET)
-    connectDB.query('SELECT patientID from patient_PersonalData WHERE userID=?', [userIdvalue.id], async (err, patientId) => {
-        if (err) throw err;
-        else {
-            console.log(patientId[0].patientID)
-            connectDB.query("UPDATE patient_FamilyData SET ? WHERE patientID=?", [req.body, patientId[0].patientID], async (err, user) => {
-                if (err) throw err
-                else {
-                    return res.send("Data updated successfully")
-                }
-            })
-        }
+    patientPersonalByUserId(userIdvalue.id, function (personalData) {
+        updatePatientFamilyData(req, personalData[0].patientId, function (result) {
+            return res.send("Family Data updated successfully")
+        })
     })
 }
 
 
 //DELETED LOGGED USERS DETAILS
-const deleteInfo = (req, res) => {
+const deleteSelfProfile = (req, res) => {
     const token = req.headers.authorization.split(' ')[1];
     const userIdvalue = jwt.verify(token, process.env.JWT_SECRET)
-    connectDB.query("SELECT patientID from patient_PersonalData WHERE userID=?", [userIdvalue.id], async (err, patientId) => {
-        if (err) throw err
-        else {
-            if (!patientId[0]) {
-                connectDB.query("DELETE FROM userData WHERE userID=?", [userIdvalue.id], async (err, useridval) => {
-                    if (err) throw err;
-                    else {
-                        return res.send("Record deleted Successfully")
-                    }
-                })
-            }
-            else {
-                connectDB.query("DELETE FROM patient_FamilyData WHERE patientID =?", [patientId[0].patientID], async (err, result) => {
-                    if (err) throw err;
-                    else {
-                        connectDB.query("DELETE FROM patient_PersonalData WHERE patientID=?", [patientId[0].patientID], async (err, result2) => {
-                            if (err) throw err;
-                            else {
-                                connectDB.query("DELETE FROM userData WHERE userID=?", [userIdvalue.id], async (err, result3) => {
-                                    if (err) throw err;
-                                    else {
-                                        return res.send("Record deleted successfully")
-                                    }
-                                })
-                            }
-                        })
-                    }
-                })
-            }
 
+    patientPersonalByUserId(userIdvalue.id, function (personalData) {
+        if (!personalData[0]) {
+            deleteUserData(req, userIdvalue.id, function (del) {
+                return res.send("Record deleted Successfully")
+            })
+        }
+        else {
+            deletePatientDocumentData(req, personalData[0].patientId, function (del1){
+            deletePatientFamilyData(req, personalData[0].patientId, function (del2) {
+                deletePatientPersonalData(req, personalData[0].patientId, function (del3) {
+                    deleteUserData(req, userIdvalue.id, function (del4) {
+                        return res.send("Record deleted successfully")
+                    })
+                })
+            })
+        })
         }
     })
+
 }
 
-
-
-export { addPersonalData, addFamilyData, addDocumentData, updatePersonalData, updateFamilyData, deleteInfo }
+export { insertPersonalData, insertFamilyData, upload, uplaodDocument, updatePersonalData, updateFamilyData, deleteSelfProfile }

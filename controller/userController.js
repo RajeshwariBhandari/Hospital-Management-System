@@ -1,68 +1,56 @@
-import connectDB from "../db/connect.js"
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import Randomstring from "randomstring"
 import sendMail from '../helpers/sendMail.js'
+import { checkIsAdmin, insertUserData, allUserData, userDataByEmail, updateUserData, deleteUserData, } from "../models/usersModel.js"
+import { patientPersonalByUserId, updatePatientPersonalData, updatePatientFamilyData, deletePatientFamilyData, deletePatientPersonalData, deletePatientDocumentData ,patientMedicalDataByUserId,insertPatientMedicalData} from "../models/patientModel.js"
 
 
 //USER CREATION FUNCTION
-const createUser = async (req, res) => {
+const registerUser = async (req, res) => {
 
-    const { firstName, lastName, email, password } = req.body
+    const { firstName, lastName, emailId, userPassword } = req.body
 
-    if (!firstName || !lastName || !email || !password) {
+    if (!firstName || !lastName || !emailId || !userPassword) {
         return res.json({ status: "error", error: "please provide all values" })
     }
     else {
-        connectDB.query('SELECT * FROM userData WHERE email = ?', [email], async (err, result) => {
-            // console.log(result)
-            if (err) throw err;
-            if (result[0]) return res.json({ error: "Email has already been registered" })
+        userDataByEmail(req, async function (result) {
+            if (result[0]) return res.json({ error: "Email Id is already registered" })
             else {
-                const Npassword = await bcrypt.hash(password, 10);
+                const password = await bcrypt.hash(userPassword, 12);
 
-                connectDB.query('INSERT INTO userData SET ?', {
-                    firstName: firstName,
-                    lastName: lastName,
-                    email: email,
-                    user_password: Npassword,
-                    isAdmin: false
-                }, (error, result) => {
-                    if (error) throw error;
-
+                insertUserData(req, password, function (result) {
                     let mailSubject = 'Mail Verification';
                     const randomToken = Randomstring.generate();
-                    let content = '<p>Hii ' + req.body.firstName + ', Please <a href = "http://localhost:3000/mail-verification?token=' + randomToken + '"> verify</a>'
+                    let content = '<p>Hii ' + req.body.firstName + ', Please <a href = "http://localhost:3000/mail-verification?token=' + randomToken + '"> Verify your email!!</a>'
 
-                    sendMail(req.body.email, mailSubject, content)
+                    sendMail(req.body.emailId, mailSubject, content)
 
-                    return res.json({ status: "success", success: "User created Successfully" })
+                    return res.json({ status: "success", success: "User registered Successfully!!" })
                 })
             }
         })
     }
 }
 
-
 //USER LOGIN 
 const loginUser = async (req, res, next) => {
-    const { email, password } = req.body
-    if (!email || !password) return res.json({ status: "error", error: "please enter your email and password" })
+    const { emailId, userPassword } = req.body
+    if (!emailId || !userPassword) return res.json({ status: "error", error: "please provide all values" })
     else {
-        connectDB.query('SELECT * FROM userData WHERE email = ?', [email], async (err, result) => {
+        userDataByEmail(req, async function (result) {
 
-            if (err) throw err;
-            if (!result[0] || !await bcrypt.compare(password, result[0].user_password)) {
-                return res.json({ status: "error", error: "Incorrect email or password" })
+            if (!result[0] || !await bcrypt.compare(userPassword, result[0].userPassword)) {
+                return res.json({ status: "error", error: "Incorrect credentials" })
             }
             else {
-                const token = jwt.sign({ id: result[0].userID }, process.env.JWT_SECRET, {
+                const token = jwt.sign({ id: result[0].userId }, process.env.JWT_SECRET, {
                     expiresIn: process.env.JWT_LIFETIME
                 })
-                req.userID = result[0].userID;
+                const user = { userId: result[0].userId, name: result[0].firstName + ' ' + result[0].lastName, emailId: result[0].emailId, isAdmin: result[0].isAdmin, isDoctor: result[0].isDoctor }
 
-                return res.json({ status: "success", success: `${result[0].firstName} login Successfully`, token, isAdmin: result[0].isAdmin, created_userID: result[0].userID })
-                //next()
+                return res.json({ status: "success", success: " login Successful!!", token, userDetails: user })
             }
         })
     }
@@ -71,24 +59,45 @@ const loginUser = async (req, res, next) => {
 
 //ADMIN FUNCTION TO SHOW ALL USERS IN DATABASE
 const allUsers = async (req, res) => {
+    const token = req.headers.authorization.split(' ')[1];
+    const userIdvalue = jwt.verify(token, process.env.JWT_SECRET)
+    checkIsAdmin(userIdvalue.id, function (result) {
+        if (result[0].isAdmin == 1) {
+            allUserData(function (result) {
+                return res.json({ result })
+            })
+        }
+        else {
+            return res.send("Unauthorized user")
+        }
+    })
+}
+
+
+//PERSONAL PROFILE/ USERDATA ONLY UPDATE
+const updateUser = async (req, res) => {
 
     const token = req.headers.authorization.split(' ')[1];
     const userIdvalue = jwt.verify(token, process.env.JWT_SECRET)
 
-    connectDB.query("SELECT isAdmin from userData WHERE userID=?", [userIdvalue.id], async (err, isadmin) => {
-        if (err) throw err;
+    updateUserData(req, userIdvalue.id, function (result) {
+        return res.send("Data updated successfully")
+    })
+}
+
+
+const editUserData = async (req, res) => {
+    const token = req.headers.authorization.split(' ')[1];
+    const userIdvalue = jwt.verify(token, process.env.JWT_SECRET)
+    const id = req.params
+    checkIsAdmin(userIdvalue.id, function (result) {
+        if (result[0].isAdmin == 1) {
+            updateUserData(req, id.id, function (result) {
+                return res.send("User Data updated successfully")
+            })
+        }
         else {
-            if (isadmin[0].isAdmin == 1) {
-                connectDB.query("SELECT userID,firstName,lastName,email,isAdmin FROM userData", async (err, result) => {
-                    if (err) throw err
-                    else {
-                        return res.json({ result })
-                    }
-                })
-            }
-            else {
-                return res.send("You don't have access to see detail of users")
-            }
+            return res.send("Unauthorized user")
         }
     })
 }
@@ -97,102 +106,58 @@ const editPersonalData = async (req, res) => {
     const token = req.headers.authorization.split(' ')[1];
     const userIdvalue = jwt.verify(token, process.env.JWT_SECRET)
     const id = req.params
-    connectDB.query("SELECT isAdmin from userData WHERE userID=?", [userIdvalue.id], async (err, isadmin) => {
-        if (err) throw err;
-        else {
-            if (isadmin[0].isAdmin == 1) {
-                const { height, weight, DOB } = req.body
-                var BMI, age;
+    checkIsAdmin(userIdvalue.id, function (result) {
+        if (result[0].isAdmin == 1) {
+            const { height, weight, DOB } = req.body
+            var BMI, age;
 
-                connectDB.query('SELECT height ,weight,DOB,age,BMI from patient_PersonalData WHERE userID=?', [id.id], async (err, hwValue) => {
-                    if (DOB) {
-                        age = new Date().getFullYear() - new Date(DOB).getFullYear()
-                    }
-                    else {
-                        age = hwValue[0].age
-                    }
+            patientPersonalByUserId(id.id, function (hwValue) {
+                if (DOB) {
+                    age = new Date().getFullYear() - new Date(DOB).getFullYear()
+                }
+                else {
+                    age = hwValue[0].age
+                }
 
-                    if (height && weight) {
-                        var h = height.split("-")
-                        BMI = (weight / (h[0] * 0.3048 + h[1] * 0.0254) ** 2).toFixed(2)
-                    }
-                    else if (!weight && height) {
-                        var h = height.split("-")
-                        BMI = (hwValue[0].weight / (h[0] * 0.3048 + h[1] * 0.0254) ** 2).toFixed(2)
-                        //console.log(BMI)
-                    }
-                    else if (!height && weight) {
-                        BMI = (weight / (hwValue[0].height[0] * 0.3048 + hwValue[0].height[2] * 0.0254) ** 2).toFixed(2)
-                        // console.log(BMI)
-                    }
-                    else {
-                        BMI = hwValue[0].BMI
-                    }
-
-                    connectDB.query("UPDATE patient_personalData SET ?,age=?, BMI =? WHERE userID=?", [req.body, age, BMI, id.id], async (err, user) => {
-                        if (err) throw err
-                        else {
-                            //console.log(user)
-                            return res.send("Data updated successfully")
-                        }
-                    })
+                if (height && weight) {
+                    var h = height.split("-")
+                    BMI = (weight / (h[0] * 0.3048 + h[1] * 0.0254) ** 2).toFixed(2)
+                }
+                else if (!weight && height) {
+                    var h = height.split("-")
+                    BMI = (hwValue[0].weight / (h[0] * 0.3048 + h[1] * 0.0254) ** 2).toFixed(2)
+                }
+                else if (!height && weight) {
+                    BMI = (weight / (hwValue[0].height[0] * 0.3048 + hwValue[0].height[2] * 0.0254) ** 2).toFixed(2)
+                }
+                else {
+                    BMI = hwValue[0].BMI
+                }
+                updatePatientPersonalData(req, age, BMI, id.id, function (result) {
+                    return res.send("Personal Data updated successfully")
                 })
-            }
-            else {
-                return res.send("you don't have access")
-            }
+            })
         }
-
+        else {
+            return res.send("Unauthorized user")
+        }
     })
-
 }
 
 const editFamilyData = async (req, res) => {
     const token = req.headers.authorization.split(' ')[1];
     const userIdvalue = jwt.verify(token, process.env.JWT_SECRET)
     const id = req.params
-    connectDB.query("SELECT isAdmin from userData WHERE userID=?", [userIdvalue.id], async (err, isadmin) => {
-        if (err) throw err;
-        else {
-            if (isadmin[0].isAdmin == 1) {
-                connectDB.query('SELECT patientID from patient_PersonalData WHERE userID=?', [id.id], async (err, patientId) => {
-                    if (err) throw err;
-                    else {
-                       // console.log(patientId[0].patientID)
-                        connectDB.query("UPDATE patient_FamilyData SET ? WHERE patientID=?", [req.body, patientId[0].patientID], async (err, user) => {
-                            if (err) throw err
-                            else {
-                                return res.send("Data updated successfully")
-                            }
-                        })
-                    }
+    checkIsAdmin(userIdvalue.id, function (result) {
+        if (result[0].isAdmin == 1) {
+            patientPersonalByUserId(id.id, function (personalData) {
+                updatePatientFamilyData(req, personalData[0].patientId, function (results) {
+                    return res.send("Family Data updated successfully")
                 })
-            }
-            else {
-                return res.send("you don't have access")
-            }
+            })
         }
-    })
-}
-
-const editUserData = async(req,res)=>{
-    const token = req.headers.authorization.split(' ')[1];
-    const userIdvalue = jwt.verify(token, process.env.JWT_SECRET)
-    const id = req.params
-    connectDB.query("SELECT isAdmin from userData WHERE userID=?", [userIdvalue.id], async (err, isadmin) => {
-        if (err) throw err;
         else {
-            if (isadmin[0].isAdmin == 1) {
-                connectDB.query("UPDATE userData SET ? WHERE userID=?", [req.body, id.id], async (err, user) => {
-                    if (err) throw err
-                    else {
-                        return res.send("Data updated successfully")
-                    }
-                })
-            }
-            else {
-                return res.send("you don't have access")
-            }
+            return res.send("Unauthorized user")
         }
     })
 }
@@ -201,65 +166,71 @@ const deletePatient = async (req, res) => {
     const token = req.headers.authorization.split(' ')[1];
     const userIdvalue = jwt.verify(token, process.env.JWT_SECRET)
     const id = req.params
-    // console.log(id.id)
-    connectDB.query("SELECT isAdmin from userData WHERE userID=?", [userIdvalue.id], async (err, isadmin) => {
-        if (err) throw err;
+    checkIsAdmin(userIdvalue.id, function (result) {
+        if (result[0].isAdmin == 1) {
+            patientPersonalByUserId(id.id, function (personalData) {
+                if (!personalData[0]) {
+                    deleteUserData(req, id.id, function (del) {
+                        return res.send("Record deleted Successfully")
+                    })
+                }
+                else {
+                    deletePatientDocumentData(req, personalData[0].patientId, function (del1) {
+                        deletePatientFamilyData(req, personalData[0].patientId, function (del2) {
+                            deletePatientPersonalData(req, personalData[0].patientId, function (del3) {
+                                deleteUserData(req, id.id, function (del4) {
+                                    return res.send("Record deleted successfully")
+                                })
+                            })
+                        })
+                    })
+                }
+            })
+        }
         else {
-            if (isadmin[0].isAdmin == 1) {
-                connectDB.query("SELECT patientID from patient_PersonalData WHERE userID=?", [id.id], async (err, patientId) => {
-                    if (err) throw err
-                    else {
-                        if (!patientId[0]) {
-                            connectDB.query("DELETE FROM userData WHERE userID=?", [id.id], async (err, useridval) => {
-                                if (err) throw err;
-                                else {
-                                    return res.send("Record deleted Successfully")
-                                }
-                            })
-                        }
-                        else {
-                            connectDB.query("DELETE FROM patient_FamilyData WHERE patientID =?", [patientId[0].patientID], async (err, result) => {
-                                if (err) throw err;
-                                else {
-                                    connectDB.query("DELETE FROM patient_PersonalData WHERE patientID=?", [patientId[0].patientID], async (err, result2) => {
-                                        if (err) throw err;
-                                        else {
-                                            connectDB.query("DELETE FROM userData WHERE userID=?", [id.id], async (err, result3) => {
-                                                if (err) throw err;
-                                                else {
-                                                    return res.send("Record deleted successfully")
-                                                }
-                                            })
-                                        }
-                                    })
-                                }
-                            })
-                        }
-                    }
-                })
+            return res.send("Unauthorized user")
+        }
 
+    })
+}
+
+//Inserting patientMedicalData by Admin
+const insertMedicalDataByAdmin = (req, res) => {
+    const { medicalHistory, treatmentPlan, appointmentDateTime, reasonForAppointment } = req.body;
+
+    const token = req.headers.authorization.split(' ')[1]
+    const userIdvalue = jwt.verify(token, process.env.JWT_SECRET)
+    const userId = req.params.userId
+    const doctorId = req.params.doctorId
+
+    checkIsAdmin(userIdvalue.id, function (result) {
+        if (result[0].isAdmin == 1) {
+            if (!appointmentDateTime || !reasonForAppointment) {
+                return res.json({ status: "error", error: "please provide all values" })
             }
             else {
-                return res.send("you don't have access")
+                patientPersonalByUserId(userId, function (personalData) {
+                    if(!personalData[0]){
+                        return res.send("No patient exist")
+                    }
+                    else{
+                    patientMedicalDataByUserId(personalData[0].patientId,doctorId, function (result) {
+                        if (result[0]) return res.json({ error: "Patient is already assigned." })
+                        else {
+                            insertPatientMedicalData(req, personalData[0].patientId,doctorId, function (result1) {
+                                return res.json({ status: "success", success: "Patient is now assigned." })
+                            })
+                        }
+                    })
+                }
+                })
             }
         }
-
-    })
-}
-
-//PERSONAL PROFILE/ USERDATA ONLY UPDATE
-const updateUser = async (req, res) => {
-
-    const token = req.headers.authorization.split(' ')[1];
-    const userIdvalue = jwt.verify(token, process.env.JWT_SECRET)
-
-    connectDB.query("UPDATE userData SET ? WHERE userID=?", [req.body, userIdvalue.id], async (err, user) => {
-        if (err) throw err
         else {
-            return res.send("Data updated successfully")
+            return res.send("Unauthorized user")
         }
     })
 }
 
 
-export { createUser, loginUser, updateUser, allUsers,editUserData, editPersonalData, editFamilyData, deletePatient }
+export { registerUser, loginUser, updateUser, allUsers, editUserData, editPersonalData, editFamilyData, deletePatient,insertMedicalDataByAdmin }

@@ -1,8 +1,8 @@
-import mysql from 'mysql'
+import mysql from 'mysql2'
 import dotenv from 'dotenv'
 dotenv.config()
 
-const connectDB = mysql.createConnection({
+const db = mysql.createConnection({
     host:process.env.DB_Host,
     user:process.env.DB_USER,
     password:process.env.DB_PASSWORD,
@@ -10,5 +10,4 @@ const connectDB = mysql.createConnection({
     port:process.env.DB_PORT
 });
 
-
-export default connectDB
+export default db

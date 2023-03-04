@@ -12,6 +12,8 @@ import passport from 'passport'
 
 import userRouter from './routes/userRoutes.js'
 import patientRouter from './routes/patientRoutes.js'
+import doctorRouter from './routes/doctorRoutes.js'
+
 
 connectDB.connect(function(error){
     if(error)throw error
@@ -24,11 +26,13 @@ app.get('/',(req,res)=>{
 })
 
 app.use('/user', userRouter)
-
 app.use('/patient', patientRouter)
+app.use('/doctor', doctorRouter)
+
 
 app.use(notFoundMiddleware)
 app.use(errorHandlerMiddleware)
+
 const port = process.env.PORT
 app.listen(port,()=>{
     console.log(`server started on ${port}`)
