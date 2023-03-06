@@ -4,7 +4,7 @@ import Randomstring from "randomstring"
 import sendMail from '../helpers/sendMail.js'
 import { checkIsAdmin, insertUserData, allUserData, userDataByEmail, updateUserData, deleteUserData, } from "../models/usersModel.js"
 import { patientPersonalByUserId, updatePatientPersonalData, updatePatientFamilyData, deletePatientFamilyData, deletePatientPersonalData, deletePatientDocumentData ,patientMedicalDataByUserId,insertPatientMedicalData} from "../models/patientModel.js"
-
+import {doctorDataByUserId} from '../models/doctorModel.js'
 
 //USER CREATION FUNCTION
 const registerUser = async (req, res) => {
@@ -199,38 +199,43 @@ const insertMedicalDataByAdmin = (req, res) => {
     const { medicalHistory, treatmentPlan, appointmentDateTime, reasonForAppointment } = req.body;
 
     const token = req.headers.authorization.split(' ')[1]
-    const userIdvalue = jwt.verify(token, process.env.JWT_SECRET)
-    const userId = req.params.userId
-    const doctorId = req.params.doctorId
+    const userIdValue = jwt.verify(token, process.env.JWT_SECRET)
+    const patientUserId = req.params.patientUserId
+    const doctorUserId = req.params.doctorUserId
 
-    checkIsAdmin(userIdvalue.id, function (result) {
+    checkIsAdmin(userIdValue.id, function (result) {
         if (result[0].isAdmin == 1) {
             if (!appointmentDateTime || !reasonForAppointment) {
                 return res.json({ status: "error", error: "please provide all values" })
             }
             else {
-                patientPersonalByUserId(userId, function (personalData) {
-                    if(!personalData[0]){
-                        return res.send("No patient exist")
+                patientPersonalByUserId(patientUserId, function (personalData) {
+                    if (!personalData[0]) {
+                        return res.send("No such patient exist")
                     }
-                    else{
-                    patientMedicalDataByUserId(personalData[0].patientId,doctorId, function (result) {
-                        if (result[0]) return res.json({ error: "Patient is already assigned." })
-                        else {
-                            insertPatientMedicalData(req, personalData[0].patientId,doctorId, function (result1) {
-                                return res.json({ status: "success", success: "Patient is now assigned." })
-                            })
-                        }
-                    })
-                }
+                    else {
+                        doctorDataByUserId(doctorUserId, function (doctorData) {
+                            if (!doctorData[0]) {
+                                return res.send("No such doctor exist")
+                            }
+                            else {
+                                patientMedicalDataByUserId(personalData[0].patientId, doctorData[0].doctorId, function (result) {
+                                    if (result[0]) return res.json({ error: "Patient is already assigned." })
+                                    else {
+                                        insertPatientMedicalData(req, personalData[0].patientId, doctorData[0].doctorId, function (result1) {
+                                            return res.json({ status: "success", success: "Patient is now assigned." })
+                                        })
+                                    }
+                                })
+                            }
+                        })
+                    }
                 })
             }
-        }
-        else {
+        } else {
             return res.send("Unauthorized user")
         }
     })
 }
-
 
 export { registerUser, loginUser, updateUser, allUsers, editUserData, editPersonalData, editFamilyData, deletePatient,insertMedicalDataByAdmin }

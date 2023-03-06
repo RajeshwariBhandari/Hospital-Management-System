@@ -18,7 +18,7 @@ router.route('/admin/editFamilyData/:id').patch(authenticateUser,editFamilyData)
 router.route('/admin/editUserData/:id/').patch(authenticateUser,editUserData)
 router.route('/admin/deletePatient/:id').delete(authenticateUser,deletePatient)
 
-router.route('/admin/insertMedicalDataByAdmin/:userId/:doctorId').post(authenticateUser,insertMedicalDataByAdmin)
+router.route('/admin/insertMedicalDataByAdmin/:patientUserId/:doctorUserId').post(authenticateUser,insertMedicalDataByAdmin)
 
 
 

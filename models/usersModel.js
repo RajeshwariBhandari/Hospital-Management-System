@@ -73,3 +73,12 @@ export const deleteUserData = (req, id, callback) => {
         }
     })
 }
+
+export const userDataByUserId = (id, callback) => {
+    db.query('SELECT * from userData WHERE userId=?', [id], async (err, result) => {
+        if (err){
+            console.log(err);
+        }
+        return callback(result)
+    })
+}

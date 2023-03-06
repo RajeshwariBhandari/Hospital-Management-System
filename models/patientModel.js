@@ -108,14 +108,14 @@ export const insertPatientDocumentData = (req, id, callback) => {
 }
 
 
-export const insertPatientMedicalData = (req, patientId,doctorId, callback) => {
+export const insertPatientMedicalData = (req, patientId, doctorId, callback) => {
     db.query('INSERT INTO patientMedicalData SET ?', {
         patientId: patientId,
-        doctorId:doctorId,
-        medicalHistory:req.body.medicalHistory,
-        treatmentPlan:req.body.treatmentPlan,
-        appointmentDateTime:req.body.appointmentDateTime,
-        reasonForAppointment:req.body.reasonForAppointment
+        doctorId: doctorId,
+        medicalHistory: req.body.medicalHistory,
+        treatmentPlan: req.body.treatmentPlan,
+        appointmentDateTime: req.body.appointmentDateTime,
+        reasonForAppointment: req.body.reasonForAppointment
     }, (err, result) => {
         if (err) {
             console.log(err)
@@ -145,8 +145,8 @@ export const patientDocumentByPatientId = (id, callback) => {
     })
 }
 
-export const patientMedicalDataByUserId = (patientId,doctorId, callback) => {
-    db.query('SELECT * from patientMedicalData WHERE patientId=? and doctorId=?', [patientId,doctorId], async (err, result) => {
+export const patientMedicalDataByUserId = (patientId, doctorId, callback) => {
+    db.query('SELECT * from patientMedicalData WHERE patientId=? and doctorId=?', [patientId, doctorId], async (err, result) => {
         if (err) {
             console.log(err)
         } else {
@@ -197,6 +197,48 @@ export const deletePatientFamilyData = (req, id, callback) => {
 
 export const deletePatientPersonalData = (req, id, callback) => {
     db.query("DELETE FROM patientPersonalData WHERE patientId =?", [id], async (err, result) => {
+        if (err) {
+            console.log(err)
+        } else {
+            return callback(result)
+        }
+    })
+}
+
+export const updatePatientMedicalData = (req, doctorId, patientId, callback) => {
+    db.query("UPDATE patientMedicalData SET ? WHERE doctorId=? and patientId=?", [req.body, doctorId, patientId], async (err, result) => {
+        if (err) {
+            console.log(err)
+        } else {
+            return callback(result)
+        }
+    })
+}
+
+export const viewMedicalHistoryByDoctor = (doctorId, callback) => {
+    db.query("SELECT userData.userId,firstName,lastName,medicalHistory,treatmentPlan FROM patientMedicalData JOIN patientpersonaldata ON patientMedicalData.patientId=patientpersonaldata.patientId JOIN userdata ON userdata.userId = patientpersonaldata.userId WHERE patientmedicaldata.doctorId=?", [doctorId], async (err, result) => {
+        if (err) {
+            console.log(err)
+        } else {
+            return callback(result)
+        }
+    })
+}
+
+
+
+export const ScheduleAppointments = (req, doctorId, patientId, callback) => {
+    db.query("UPDATE patientMedicalData SET appointmentDateTime=?,reasonForAppointment=? WHERE doctorId=? and patientId=?", [req.body.appointmentDateTime,req.body.reasonForAppointment, doctorId, patientId], async (err, result) => {
+        if (err) {
+            console.log(err)
+        } else {
+            return callback(result)
+        }
+    })
+}
+
+export const viewAppointments = (doctorId, callback) => {
+    db.query("SELECT userData.userId,firstName,lastName,appointmentDateTime,reasonForAppointment FROM patientMedicalData JOIN patientpersonaldata ON patientMedicalData.patientId=patientpersonaldata.patientId JOIN userdata ON userdata.userId = patientpersonaldata.userId WHERE patientmedicaldata.doctorId=? AND appointmentDateTime >= now()", [doctorId], async (err, result) => {
         if (err) {
             console.log(err)
         } else {

@@ -40,4 +40,6 @@ const fillDoctorData = (req, id, callback) => {
     })
 }
 
+
+
 export { checkIsDoctor, doctorDataByUserId, fillDoctorData }
