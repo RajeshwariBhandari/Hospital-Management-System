@@ -1,7 +1,7 @@
 import express from 'express'
 const router = express.Router()
 
-import{registerUser,loginUser,updateUser,allUsers,editUserData,editPersonalData,editFamilyData,deletePatient,insertMedicalDataByAdmin} from "../controller/userController.js"
+import{registerUser,loginUser,updateUser,allUsers,editUserData,editPersonalData,editFamilyData,deletePatient,insertMedicalDataByAdmin,viewPatientDoctor} from "../controller/userController.js"
 import authenticateUser from '../middleware/auth.js'
 
 
@@ -13,12 +13,13 @@ router.route('/updateUser').patch(authenticateUser,updateUser)
 
 //ADMIN ROUTES
 router.route('/admin/allUsers').get(authenticateUser,allUsers)
-router.route('/admin/editPersonalData/:id').patch(authenticateUser,editPersonalData)
-router.route('/admin/editFamilyData/:id').patch(authenticateUser,editFamilyData)
-router.route('/admin/editUserData/:id/').patch(authenticateUser,editUserData)
-router.route('/admin/deletePatient/:id').delete(authenticateUser,deletePatient)
+router.route('/admin/editPersonalData').patch(authenticateUser,editPersonalData)
+router.route('/admin/editFamilyData').patch(authenticateUser,editFamilyData)
+router.route('/admin/editUserData').patch(authenticateUser,editUserData)
+router.route('/admin/deletePatient').delete(authenticateUser,deletePatient)
 
-router.route('/admin/insertMedicalDataByAdmin/:patientUserId/:doctorUserId').post(authenticateUser,insertMedicalDataByAdmin)
+router.route('/admin/insertMedicalDataByAdmin').post(authenticateUser,insertMedicalDataByAdmin)
+router.route('/admin/viewPatientDoctor').get(authenticateUser,viewPatientDoctor)
 
 
 
