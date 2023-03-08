@@ -1,7 +1,7 @@
 import db from "../db/connect.js";
 
 
-export const patientPersonalByUserId = (id, callback) => {
+const patientPersonalByUserId = (id, callback) => {
     db.query('SELECT * from patientPersonalData WHERE userId=?', [id], async (err, result) => {
         if (err) {
             console.log(err)
@@ -12,7 +12,7 @@ export const patientPersonalByUserId = (id, callback) => {
     })
 }
 
-export const insertPatientPersonalData = (req, id, age, BMI, callback) => {
+const insertPatientPersonalData = (req, id, age, BMI, callback) => {
 
     db.query('INSERT INTO patientPersonalData SET ?', {
         userId: id,
@@ -37,7 +37,7 @@ export const insertPatientPersonalData = (req, id, age, BMI, callback) => {
     })
 }
 
-export const insertPatientFamilyData = (req, id, callback) => {
+const insertPatientFamilyData = (req, id, callback) => {
     db.query('INSERT INTO patientFamilyData SET ?', {
         patientId: id,
         fatherName: req.body.fatherName,
@@ -59,7 +59,7 @@ export const insertPatientFamilyData = (req, id, callback) => {
 }
 
 
-export const insertPatientIdDocumentData = (id, callback) => {
+const insertPatientIdDocumentData = (id, callback) => {
 
     db.query('INSERT INTO patientDocumentData SET ?', {
         patientId: id,
@@ -74,7 +74,7 @@ export const insertPatientIdDocumentData = (id, callback) => {
     })
 }
 
-export const insertPatientDocumentData = (req, id, callback) => {
+const insertPatientDocumentData = (req, id, callback) => {
     //console.log(req)
     const url = "https://drive.google.com/file/d/"
     if (req.name == 'AadharFront.png') {
@@ -108,7 +108,7 @@ export const insertPatientDocumentData = (req, id, callback) => {
 }
 
 
-export const insertPatientMedicalData = (req, patientId, doctorId, callback) => {
+const insertPatientMedicalData = (req, patientId, doctorId, callback) => {
     db.query('INSERT INTO patientMedicalData SET ?', {
         patientId: patientId,
         doctorId: doctorId,
@@ -126,7 +126,7 @@ export const insertPatientMedicalData = (req, patientId, doctorId, callback) => 
 }
 
 
-export const patientFamilyByPatientId = (id, callback) => {
+const patientFamilyByPatientId = (id, callback) => {
     db.query('SELECT * from patientFamilyData WHERE patientId=?', [id], async (err, result) => {
         if (err) {
             console.log(err)
@@ -135,7 +135,7 @@ export const patientFamilyByPatientId = (id, callback) => {
         }
     })
 }
-export const patientDocumentByPatientId = (id, callback) => {
+const patientDocumentByPatientId = (id, callback) => {
     db.query('SELECT * from patientDocumentData WHERE patientId=?', [id], async (err, result) => {
         if (err) {
             console.log(err)
@@ -145,7 +145,7 @@ export const patientDocumentByPatientId = (id, callback) => {
     })
 }
 
-export const patientMedicalDataByUserId = (patientId, doctorId, callback) => {
+const patientMedicalDataByUserId = (patientId, doctorId, callback) => {
     db.query('SELECT * from patientMedicalData WHERE patientId=? and doctorId=?', [patientId, doctorId], async (err, result) => {
         if (err) {
             console.log(err)
@@ -155,7 +155,7 @@ export const patientMedicalDataByUserId = (patientId, doctorId, callback) => {
         }
     })
 }
-export const updatePatientPersonalData = (req, age, BMI, id, callback) => {
+const updatePatientPersonalData = (req, age, BMI, id, callback) => {
     db.query("UPDATE patientPersonalData SET ?,age=?, BMI =? WHERE userId=?", [req.body, age, BMI, id], async (err, result) => {
         if (err) {
             console.log(err)
@@ -165,7 +165,7 @@ export const updatePatientPersonalData = (req, age, BMI, id, callback) => {
     })
 }
 
-export const updatePatientFamilyData = (req, id, callback) => {
+const updatePatientFamilyData = (req, id, callback) => {
     db.query("UPDATE patientFamilyData SET ? WHERE patientId=?", [req.body, id], async (err, result) => {
         if (err) {
             console.log(err)
@@ -175,7 +175,7 @@ export const updatePatientFamilyData = (req, id, callback) => {
     })
 }
 
-export const deletePatientMedicalData = ( id, callback) => {
+const deletePatientMedicalData = (id, callback) => {
     db.query("DELETE FROM patientMedicalData WHERE patientId =?", [id], async (err, result) => {
         if (err) {
             console.log(err)
@@ -184,7 +184,7 @@ export const deletePatientMedicalData = ( id, callback) => {
         }
     })
 }
-export const deletePatientReportData = ( id, callback) => {
+const deletePatientReportData = (id, callback) => {
     db.query("DELETE FROM patientMedicalReport WHERE patientId =?", [id], async (err, result) => {
         if (err) {
             console.log(err)
@@ -194,7 +194,7 @@ export const deletePatientReportData = ( id, callback) => {
     })
 }
 
-export const deletePatientDocumentData = ( id, callback) => {
+const deletePatientDocumentData = (id, callback) => {
     db.query("DELETE FROM patientDocumentData WHERE patientId =?", [id], async (err, result) => {
         if (err) {
             console.log(err)
@@ -204,7 +204,7 @@ export const deletePatientDocumentData = ( id, callback) => {
     })
 }
 
-export const deletePatientFamilyData = ( id, callback) => {
+const deletePatientFamilyData = (id, callback) => {
     db.query("DELETE FROM patientFamilyData WHERE patientId =?", [id], async (err, result) => {
         if (err) {
             console.log(err)
@@ -214,7 +214,7 @@ export const deletePatientFamilyData = ( id, callback) => {
     })
 }
 
-export const deletePatientPersonalData = ( id, callback) => {
+const deletePatientPersonalData = (id, callback) => {
     db.query("DELETE FROM patientPersonalData WHERE patientId =?", [id], async (err, result) => {
         if (err) {
             console.log(err)
@@ -224,8 +224,8 @@ export const deletePatientPersonalData = ( id, callback) => {
     })
 }
 
-export const viewPatientMedicalHistory = (doctorId,patientId, callback) => {
-    db.query("SELECT medicalHistory FROM patientMedicalData WHERE doctorId=? and patientId=? ", [doctorId,patientId], async (err, result) => {
+const viewPatientMedicalHistory = (doctorId, patientId, callback) => {
+    db.query("SELECT medicalHistory FROM patientMedicalData WHERE doctorId=? and patientId=? ", [doctorId, patientId], async (err, result) => {
         if (err) {
             console.log(err)
         } else {
@@ -234,8 +234,8 @@ export const viewPatientMedicalHistory = (doctorId,patientId, callback) => {
     })
 }
 
-export const updatePatientMedicalData = (req,medicalHistory, doctorId, patientId, callback) => {
-    db.query("UPDATE patientMedicalData SET medicalHistory =CONCAT(?,', ',?), treatmentPlan=? WHERE doctorId=? and patientId=?", [medicalHistory,req.body.medicalHistory,req.body.treatmentPlan, doctorId, patientId], async (err, result) => {
+const updatePatientMedicalData = (req, medicalHistory, doctorId, patientId, callback) => {
+    db.query("UPDATE patientMedicalData SET medicalHistory =CONCAT(?,', ',?), treatmentPlan=? WHERE doctorId=? and patientId=?", [medicalHistory, req.body.medicalHistory, req.body.treatmentPlan, doctorId, patientId], async (err, result) => {
         if (err) {
             console.log(err)
         } else {
@@ -244,7 +244,7 @@ export const updatePatientMedicalData = (req,medicalHistory, doctorId, patientId
     })
 }
 
-export const viewMedicalHistoryByDoctor = (doctorId, callback) => {
+const viewMedicalHistoryByDoctor = (doctorId, callback) => {
     db.query("SELECT userData.userId,firstName,lastName,medicalHistory,treatmentPlan FROM patientMedicalData JOIN patientpersonaldata ON patientMedicalData.patientId=patientpersonaldata.patientId JOIN userdata ON userdata.userId = patientpersonaldata.userId WHERE patientmedicaldata.doctorId=?", [doctorId], async (err, result) => {
         if (err) {
             console.log(err)
@@ -254,8 +254,8 @@ export const viewMedicalHistoryByDoctor = (doctorId, callback) => {
     })
 }
 
-export const ScheduleAppointments = (req, doctorId, patientId, callback) => {
-    db.query("UPDATE patientMedicalData SET appointmentDateTime=?,reasonForAppointment=? WHERE doctorId=? and patientId=?", [req.body.appointmentDateTime,req.body.reasonForAppointment, doctorId, patientId], async (err, result) => {
+const ScheduleAppointments = (req, doctorId, patientId, callback) => {
+    db.query("UPDATE patientMedicalData SET appointmentDateTime=?,reasonForAppointment=? WHERE doctorId=? and patientId=?", [req.body.appointmentDateTime, req.body.reasonForAppointment, doctorId, patientId], async (err, result) => {
         if (err) {
             console.log(err)
         } else {
@@ -264,7 +264,7 @@ export const ScheduleAppointments = (req, doctorId, patientId, callback) => {
     })
 }
 
-export const viewAppointments = (doctorId, callback) => {
+const viewAppointments = (doctorId, callback) => {
     db.query("SELECT userData.userId,firstName,lastName,appointmentDateTime,reasonForAppointment FROM patientMedicalData JOIN patientpersonaldata ON patientMedicalData.patientId=patientpersonaldata.patientId JOIN userdata ON userdata.userId = patientpersonaldata.userId WHERE patientmedicaldata.doctorId=? AND appointmentDateTime >= now()", [doctorId], async (err, result) => {
         if (err) {
             console.log(err)
@@ -274,25 +274,26 @@ export const viewAppointments = (doctorId, callback) => {
     })
 }
 
-export const availablePatients=(callback)=>{
-    db.query("SELECT patientId,firstName,lastName FROM userData JOIN patientpersonaldata ON userData.userId=patientpersonaldata.userId WHERE patientId NOT IN(SELECT patientId FROM patientmedicaldata WHERE appointmentDateTime>now()",(err,result)=>{
-        if(err) {
+const availablePatients = (callback) => {
+    db.query("SELECT patientId,firstName,lastName FROM userData JOIN patientpersonaldata ON userData.userId=patientpersonaldata.userId WHERE patientId NOT IN(SELECT patientId FROM patientmedicaldata WHERE appointmentDateTime>now()", (err, result) => {
+        if (err) {
             console.log(err)
         }
-        else{
+        else {
             return callback(result)
         }
     })
 }
 
 
-export const assignedPatientWithDoctor=(callback)=>{
-    db.query("SELECT patientpersonaldata.patientId,firstName,lastName,doctorId as assigned_doctorId FROM userData JOIN patientpersonaldata ON userData.userId=patientpersonaldata.userId JOIN patientmedicaldata ON patientpersonaldata.patientId=patientmedicaldata.patientId",(err,result)=>{
-        if(err) {
+const assignedPatientWithDoctor = (callback) => {
+    db.query("SELECT patientpersonaldata.patientId,firstName,lastName,doctorId as assigned_doctorId FROM userData JOIN patientpersonaldata ON userData.userId=patientpersonaldata.userId JOIN patientmedicaldata ON patientpersonaldata.patientId=patientmedicaldata.patientId", (err, result) => {
+        if (err) {
             console.log(err)
         }
-        else{
+        else {
             return callback(result)
         }
     })
 }
+export { patientPersonalByUserId, insertPatientPersonalData, insertPatientFamilyData, insertPatientIdDocumentData, insertPatientDocumentData, insertPatientMedicalData, patientFamilyByPatientId, patientDocumentByPatientId, patientMedicalDataByUserId, updatePatientPersonalData, updatePatientFamilyData, deletePatientMedicalData, deletePatientReportData, deletePatientDocumentData, deletePatientFamilyData, deletePatientPersonalData, viewPatientMedicalHistory, updatePatientMedicalData, viewMedicalHistoryByDoctor, ScheduleAppointments, viewAppointments, availablePatients, assignedPatientWithDoctor }
