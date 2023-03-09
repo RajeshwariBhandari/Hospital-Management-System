@@ -2,7 +2,7 @@ import express from 'express'
 const router = express.Router()
 
 import authenticateUser from '../middleware/auth.js'
-import {insertDoctorData,createPatientByDoctor,insertMedicalDataByDoctor,updatePMDataByDoctor,viewMedicalHistory,ScheduleAppointmentsByDoctor,viewAppointmentByDoctor,availablePatientsForAppointment} from '../controller/doctorController.js'
+import {insertDoctorData,createPatientByDoctor,insertMedicalDataByDoctor,updatePMDataByDoctor,viewMedicalHistory,ScheduleAppointmentsByDoctor,viewAppointmentByDoctor,availablePatientsForAppointment} from '../controllers/doctorController.js'
 
 router.route('/insertDoctorData').post(authenticateUser,insertDoctorData)
 router.route('/createPatientByDoctor').post(authenticateUser,createPatientByDoctor)

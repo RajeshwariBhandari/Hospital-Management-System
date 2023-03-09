@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken'
 import { checkIsDoctor, doctorDataByUserId, fillDoctorData } from '../models/doctorModel.js'
 import { patientPersonalByUserId, insertPatientPersonalData, patientMedicalDataByUserId, insertPatientMedicalData, updatePatientMedicalData, viewMedicalHistoryByDoctor, ScheduleAppointments, viewAppointments, viewPatientMedicalHistory ,availablePatients} from '../models/patientModel.js';
-import { userDataByUserId } from '../models/usersModel.js'
+import { userDataByUserId } from '../models/userModel.js'
 
 //INSERTING DOCTOR DATA IF LOGGED USER IS DOCTOR
 const insertDoctorData = (req, res) => {

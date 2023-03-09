@@ -4,7 +4,7 @@ import path from 'path'
 import multer from 'multer'
 import { fileURLToPath } from 'url'
 import { google } from 'googleapis'
-import { deleteUserData, } from "../models/usersModel.js"
+import { deleteUserData, } from "../models/userModel.js"
 import { patientPersonalByUserId, patientFamilyByPatientId, patientDocumentByPatientId, insertPatientPersonalData, insertPatientFamilyData, insertPatientIdDocumentData, insertPatientDocumentData, updatePatientPersonalData, updatePatientFamilyData, deletePatientFamilyData, deletePatientPersonalData, deletePatientDocumentData, deletePatientReportData, deletePatientMedicalData } from '../models/patientModel.js'
 
 //INSERTING PERSONAL DETAILS FOR LOGGED USER

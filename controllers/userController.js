@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import Randomstring from "randomstring"
 import sendMail from '../helpers/sendMail.js'
-import { checkIsAdmin, insertUserData, allUserData, userDataByEmail, updateUserData, deleteUserData, } from "../models/usersModel.js"
+import { checkIsAdmin, insertUserData, allUserData, userDataByEmail, updateUserData, deleteUserData, } from "../models/userModel.js"
 import { patientPersonalByUserId, updatePatientPersonalData, updatePatientFamilyData, deletePatientFamilyData, deletePatientPersonalData, deletePatientDocumentData, patientMedicalDataByUserId, insertPatientMedicalData, deletePatientReportData, deletePatientMedicalData,assignedPatientWithDoctor } from "../models/patientModel.js"
 import { doctorDataByUserId } from '../models/doctorModel.js'
 

@@ -1,7 +1,7 @@
 import express from 'express'
 const router = express.Router()
 
-import{registerUser,loginUser,updateUser,allUsers,editUserData,editPersonalData,editFamilyData,deletePatient,insertMedicalDataByAdmin,viewPatientDoctor} from "../controller/userController.js"
+import{registerUser,loginUser,updateUser,allUsers,editUserData,editPersonalData,editFamilyData,deletePatient,insertMedicalDataByAdmin,viewPatientDoctor} from "../controllers/userController.js"
 import authenticateUser from '../middleware/auth.js'
 
 
